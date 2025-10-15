@@ -1,0 +1,382 @@
+Secure Key Permissions
+chmod 400 flask-key-pair.pem
+→ Restrict access to your private key file for SSH.
+
+SSH into EC2
+ssh -i "flask-key-pair.pem" ubuntu@16.171.165.135
+→ Connect to your EC2 instance using your private key.
+
+Update and Upgrade Packages
+sudo apt update && sudo apt -y upgrade
+→ Refresh and upgrade all system packages.
+
+Set Hostname
+sudo hostnamectl set-hostname flask-server
+→ Change the server name for easy identification.
+
+Check Hostname
+hostname
+→ Verify the current system hostname.
+
+Edit Hosts File
+sudo nano /etc/hosts
+→ Open the system hosts file in the nano editor.
+  You can map hostnames to IP addresses here, e.g.:
+  127.0.0.1   localhost
+  13.60.231.180   flask-server
+  This helps ensure your new hostname resolves locally.
+
+Switch to Root (temporary)
+sudo -i
+→ Switch to the root user for full administrative access.
+  Use 'exit' to return to the ubuntu user.
+
+Allow Sudo Without Password
+sudo visudo
+→ Opens the sudoers file.
+  Add this line at the end to skip password prompts:
+  ubuntu ALL=(ALL) NOPASSWD: ALL
+
+Add Ubuntu User to Sudo Group
+sudo adduser ubuntu sudo
+→ Ensures the 'ubuntu' user has sudo privileges.
+  (Output: The user 'ubuntu' is already a member of 'sudo'.)
+
+Create SSH Directory
+mkdir .ssh
+→ Creates the .ssh directory in the home folder if it does not already exist.
+→ Required for storing authorized SSH keys securely.
+
+====================================================
+
+Generate SSH Key Pair on Local Machine
+ssh-keygen -b 4096
+→ Creates a new ED25519 SSH key pair on the host system for secure authentication.
+
+Copy Public Key to Server
+scp -i flask-key-pair.pem ~/.ssh/id_ed25519.pub ubuntu@16.171.165.135:~/.ssh/authorized_keys
+→ Securely copies the local public key to the EC2 instance using the .pem key for authentication.
+→ Transfer successful.
+
+=====================================================
+
+Set Permissions for SSH Directory and Keys
+sudo chmod 700 ~/.ssh
+→ Ensures only the owner can access the .ssh directory.
+
+sudo chmod 600 ~/.ssh/*
+→ Restricts access to SSH key files so only the owner can read/write them.
+→ Prevents SSH from rejecting keys due to insecure permissions.
+
+Now I Can Login from My Local Host Without a Password
+→ Verifies that SSH key-based authentication is working properly.
+  Example: ssh ubuntu@16.171.165.135
+
+=====================================================
+
+Edit SSH Daemon Configuration
+sudo nano /etc/ssh/sshd_config
+→ Opens the SSH configuration file for editing.
+
+Inside the file, locate and modify (or add) the following lines:
+
+PasswordAuthentication no
+→ Disables password-based SSH login.
+  This ensures only key-based authentication is allowed — much more secure.
+
+PermitRootLogin no
+→ Prevents direct root login over SSH.
+  This forces all users to log in as a normal user (e.g., ubuntu) and use sudo for administrative tasks.
+
+Save and exit (Ctrl + O, Enter, Ctrl + X).
+
+Restart SSH Service
+sudo systemctl restart ssh
+→ Applies the new SSH configuration changes immediately.
+
+Install UFW
+sudo apt install ufw
+→ Installs the Uncomplicated Firewall (UFW) package for managing firewall rules.
+
+Set Default Policies
+sudo ufw default deny incoming
+→ Denies all incoming connections by default (safer baseline).
+
+sudo ufw default allow outgoing
+→ (Optional but recommended) Allows all outgoing connections from the server.
+
+Allow SSH Access
+sudo ufw allow ssh
+→ Allows SSH connections (port 22) so you don’t get locked out after enabling the firewall.
+
+Allow Flask App Port
+sudo ufw allow 5000
+→ Opens port 5000 for your Flask application (temporary for testing; later you’ll use port 80 or 443 via Nginx).
+
+Enable the Firewall
+sudo ufw enable
+→ Activates the firewall and ensures it starts automatically on system boot.
+
+Check Firewall Status
+sudo ufw status
+→ Displays all active firewall rules.
+
+Transfer Flask Project to Server
+scp -r ~/API/Flask/corey/blog ubuntu@16.171.165.135:~/
+→ Copies your local blog project directory to the EC2 server.
+
+Install Python Package Manager (pip)
+sudo apt install python3-pip -y
+→ Installs pip3, the Python package manager, so you can install dependencies globally or within a virtual environment.
+
+Install Virtual Environment Module
+sudo apt install python3-venv -y
+→ Installs Python’s built-in venv module, allowing you to create isolated environments for your Flask app if needed.
+(Useful for keeping project dependencies separate.)
+
+Create Virtual Environment
+python3 -m venv blog/venv
+→ Creates an isolated environment for project dependencies inside the blog directory.
+cd blog/
+source venv/bin/activate
+→ Moves into your Flask project directory.
+→ Activates the virtual environment.
+
+Install Dependencies
+pip install -r requirements.txt
+→ Installs all required Python packages for your Flask project inside the virtual environment.
+
+Create Config JSON
+sudo touch e
+sudo chmod 600 /etc/config.json
+→ Creates an empty configuration file with secure permissions.
+
+Secure Config File for Secrets
+sudo touch /etc/config.json
+sudo chmod 600 /etc/config.json
+sudo chown ubuntu:ubuntu /etc/config.json
+
+Edit Config JSON
+sudo nano /etc/config.json
+→ Add environment variables for Flask app
+
+Configure Flask to Use JSON Config
+Edit config.py
+→ Your Flask app can now use SECRET_KEY, SQLALCHEMY_DATABASE_URI, EMAIL_USER, and EMAIL_PASS directly from this file (config.get instead of os.environ.get).
+
+🚀 Run Flask App
+export FLASK_APP=run.py
+flask run --host=0.0.0.0
+→ Starts the Flask app on all network interfaces (port 5000 by default).
+Visit: http://<EC2-public-IP>:5000
+Stop the app:
+Ctrl + C
+
+🧭 Production Deployment (Nginx + Gunicorn)
+Install Nginx
+sudo apt install nginx
+→ Installs Nginx web server.
+→ Verify installation:
+sudo systemctl status nginx
+Allow through firewall:
+sudo ufw allow 'Nginx Full'
+sudo ufw status
+Install Gunicorn (inside venv)
+pip install gunicorn
+gunicorn --version
+→ Installs Gunicorn WSGI server to serve Flask apps.
+
+🌐 Nginx Reverse Proxy Configuration (Manual Setup)
+Remove Default Nginx Site
+sudo rm /etc/nginx/sites-enabled/default
+→ Removes the default Nginx configuration to prevent conflicts.
+Create New Blog Configuration
+sudo nano /etc/nginx/sites-enabled/blog
+Paste this configuration:
+server {
+    listen 80;
+    server_name 13.60.231.180;
+
+    location /static {
+        alias /home/ubuntu/Hale_Blog/blog/static;
+    }
+
+    location / {
+        proxy_pass http://localhost:8000;
+        include /etc/nginx/proxy_params;
+        proxy_redirect off;
+    }
+}
+→ This routes all HTTP traffic on port 80 to Gunicorn running on port 8000, and serves static files directly from your Flask app’s static folder.
+
+🔒 Firewall Configuration for Production (Switch from Flask to Nginx)
+sudo ufw allow http/tcp
+→ Opens port 80 (HTTP) to allow web traffic through Nginx.
+sudo ufw delete allow 5000
+→ Removes access to port 5000, which was only used for Flask’s development server.
+→ Keeps your setup more secure and production-ready.
+
+🔐 Finalize Firewall & Nginx Setup
+sudo ufw enable
+→ Activates the firewall and ensures it auto-starts on boot.
+⚠️ You’ll see a warning that it may disrupt SSH connections — typing y confirms and applies your firewall rules.
+sudo systemctl restart nginx
+→ Restarts the Nginx service to apply your new reverse proxy configuration.
+
+🧩 Gunicorn Configuration and Performance Tuning
+Run Flask App with Gunicorn
+gunicorn -w 5 -b 127.0.0.1:8000 run:app
+→ Launches the Flask app using Gunicorn with:
+5 workers → calculated as (2 × CPU cores) + 1 for 2 cores.
+127.0.0.1:8000 → binds Gunicorn to localhost on port 8000 (proxied by Nginx).
+
+=======================================================
+🧩 Fix Nginx “403 Forbidden” for Static Files (Profile Pictures Not Loading)
+Problem:
+After deploying Flask with Gunicorn and Nginx, profile images and other static files were not loading.
+Nginx returned:
+
+HTTP/1.1 403 Forbidden
+
+Cause:
+Nginx runs as the www-data user and didn’t have permission to traverse your project directories
+(/home/ubuntu/Hale_Blog/...).
+
+🛠 Step-by-Step Fix
+
+1️⃣ Check Directory Permissions
+Run these one by one to inspect access along the directory chain:
+
+ls -ld /home
+ls -ld /home/ubuntu
+ls -ld /home/ubuntu/Hale_Blog
+ls -ld /home/ubuntu/Hale_Blog/blog
+ls -ld /home/ubuntu/Hale_Blog/blog/static
+ls -ld /home/ubuntu/Hale_Blog/blog/static/profile_pics
+
+If any of these show permissions like:
+
+drwx------  ubuntu ubuntu ...
+
+then Nginx can’t enter that directory.
+
+2️⃣ Allow Directory Traversal
+Grant safe “execute” (traverse) permission for others (o+x) on each path:
+
+sudo chmod o+x /home /home/ubuntu /home/ubuntu/Hale_Blog /home/ubuntu/Hale_Blog/blog /home/ubuntu/Hale_Blog/blog/static /home/ubuntu/Hale_Blog/blog/static/profile_pics
+
+This does not allow others to read or modify files — it only lets Nginx walk into those directories.
+
+3️⃣ Restart Nginx
+
+sudo systemctl restart nginx
+
+4️⃣ Test Access
+
+curl -I http://127.0.0.1/static/profile_pics/default.jpg
+
+✅ Expected output:
+
+HTTP/1.1 200 OK
+Content-Type: image/jpeg
+
+You can also verify externally:
+
+http://13.60.231.180/static/profile_pics/default.jpg
+=========================================================
+
+⚙️ Set Up Supervisor for Flask App
+
+Purpose:
+Supervisor ensures your Flask app (via Gunicorn) automatically starts on boot, restarts on crash, and runs in the background as a managed service.
+
+🧩 1️⃣ Install Supervisor
+sudo apt install supervisor -y
+
+
+→ Installs the Supervisor process control system.
+
+🧩 2️⃣ Create Log Directory
+sudo mkdir -p /var/log/blog
+sudo chown ubuntu:ubuntu /var/log/blog
+
+
+→ Creates a dedicated log folder for your Flask app’s logs.
+
+🧩 3️⃣ Create Supervisor Configuration File
+
+Open the config:
+
+sudo nano /etc/supervisor/conf.d/blog.conf
+
+
+Paste the following clean, corrected configuration:
+
+[program:blog]
+directory=/home/ubuntu/Hale_Blog
+command=/home/ubuntu/Hale_Blog/blog/venv/bin/gunicorn -w 5 -b 127.0.0.1:8000 run:app
+user=ubuntu
+autostart=true
+autorestart=true
+startasgroup=true
+killasgroup=true
+stderr_logfile=/var/log/blog/blog.err.log
+stdout_logfile=/var/log/blog/blog.out.log
+
+
+✅ Fixes included:
+
+Corrected the path to match your project (Hale_Blog, not flask_Blog).
+
+Added binding to 127.0.0.1:8000 so Nginx can reverse-proxy correctly.
+
+Fixed user=ubuntu\autostart=true typo → separated into two lines.
+
+Corrected missing / in stdout_logfile path.
+
+Ensured logs go to /var/log/blog/.
+
+🧩 4️⃣ Reload and Update Supervisor
+sudo supervisorctl reread
+sudo supervisorctl update
+
+
+→ Loads the new program definition.
+
+🧩 5️⃣ Start Your Flask App Under Supervisor
+sudo supervisorctl start blog
+
+🧩 6️⃣ Check Status
+sudo supervisorctl status
+
+
+Expected:
+
+blog                            RUNNING   pid 1234, uptime 0:02:15
+
+🧩 7️⃣ View Logs (if needed)
+cat /var/log/blog/blog.out.log
+cat /var/log/blog/blog.err.log
+
+====================================================
+🧩 Fix “Request Entity Too Large” (File Upload Limit in Nginx)
+Problem:
+When uploading profile images or other files, you might see:
+413 Request Entity Too Large
+This means Nginx is blocking uploads that exceed the default limit (1 MB).
+Solution:
+1️⃣ Edit the main Nginx configuration
+sudo nano /etc/nginx/nginx.conf
+2️⃣ Add this line inside the http { ... } block (not outside it):
+http {
+    client_max_body_size 5M;
+    ...
+}
+You can increase the limit (e.g., 10M, 20M) depending on your app’s needs.
+3️⃣ Test Nginx configuration
+sudo nginx -t
+✅ You should see:
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+4️⃣ Restart Nginx to apply changes
+sudo systemctl restart nginx
+========================================================
