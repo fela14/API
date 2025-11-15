@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hale Careers</title>
+
+    <!-- Link to your CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+</head>
+<body>
+    {% include 'nav.html' %}
+
+    <img class="img-fluid" id="banner" src="{{ url_for('static', filename='banner.jpg') }}" height="320" alt="Banner">
+
+    <div class="container">
+        <h1 class="text-center mt-2 mb-2">Hale Careers</h1>
+        
+        <div class="row" style="margin-bottom:16px">
+            <div class="col-md-6">
+                <p class="lead" style="text-align: justify;">
+        At Hale, we believe that great careers are built on passion, purpose, and growth.  
+        Our mission is to connect talented individuals with meaningful opportunities that inspire success and drive innovation.  
+        Whether you’re just starting your professional journey or looking to take the next big step, we’re here to help you find a role that aligns with your skills, values, and ambitions.  
+        Join us and be part of a community that’s shaping the future — one career at a time.  
+        We also offer mentorship programs and continuous learning opportunities to ensure every team member thrives and grows within our organization.
+    </p>
+            </div>
+            <div class="d-none d-md-block col-md-6">
+                <img src="{{ url_for('static', filename='people.jpg') }}" style="height:320px;" class="img-fluid" alt="People" border-radius="4px">
+            </div>
+        </div>
+
+        <h2 class="text-center mt-2 mb-2">Job Openings</h2>
+        <div>
+            {% for job in jobs %}
+                {% include 'jobs.html' %}
+            {% endfor %}
+        </div>
+
+        <div class="text-center">
+            <a class="btn btn-primary btn-lg" href="mailto:kfakeye14.2@gmail.com?subject=Question%20about%20Job%20Openings&body=Name%3A%20%3Cyour%20name%20here%3E%0D%0AQuestion%3A%20%3Cyour%20question%20here%3E" target="_blank">Contact Us</a>
+        </div><br>
+    </div>
+
+    {% include 'footer.html' %}
+</body>
+</html>

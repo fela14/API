@@ -1,0 +1,4 @@
+# Environment and secret files
+Flask/rest/ful/scratch/twilio.env
+Flask/jovian/web/pass.txt
+Flask/jovian/web/aiven/ca.pem
