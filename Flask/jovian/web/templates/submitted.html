@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Application Submitted</title>
+    {% include 'bootstrap.html' %}
+</head>
+<body class="container mt-4">
+    {% include 'nav.html' %}
+
+    {% include 'banner.html' %}
+
+    <div class="job-content mt-2 mb-4">
+
+        <h1 class="text-center mt-2 mb-2">Hale Careers</h1>
+
+        <p class="lead">Application Submitted Successfully for the role of "{{job['title']}}"" at Hale!</p>
+        
+        <b>Full Name</b>
+        <div class="mb-2">{{ application['full_name'] }}</div>
+        
+        <b>Email</b>
+        <div class="mb-2">{{ application['email'] }}</div>
+        
+        <b>LinkedIn</b>
+        <div class="mb-2">{{ application['linkedin'] or "Not provided" }}</div>
+        
+        <b>Resume URL</b>
+        <div class="mb-2">
+            {% if application['resume'] %}
+                <a href="{{ application['resume'] }}" target="_blank">{{ application['resume'] }}</a>
+            {% else %}
+                Not provided
+            {% endif %}
+        </div>
+        
+        <b>Education</b>
+        <div class="mb-2">{{ application['education'] or "Not provided" }}</div>
+        
+        <b>Work Experience</b>
+        <div class="mb-2">{{ application['work_experience'] or "Not provided" }}</div>
+        
+        <a href="/" class="btn btn-primary mt-3">Back to Jobs</a>
+
+        </div>
+    
+    {% include 'footer.html' %}
+</body>
+</html>
