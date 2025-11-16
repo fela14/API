@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, MetaData, Table, select
+from sqlalchemy import create_engine, MetaData, Table, select, text
 
 # -----------------------------
 # 1️⃣ Connection parameters
@@ -14,18 +14,18 @@ PASSWORD = os.getenv("PASSWORD")
 if not PASSWORD:
     raise ValueError("Environment variable PASSWORD is not set!")
 
-# SSL certificate from env variable
+# SSL certificate from environment variable
 SSL_CA_CONTENT = os.getenv("SSL_CA_CONTENT")
 if not SSL_CA_CONTENT:
     raise ValueError("Environment variable SSL_CA_CONTENT is not set!")
 
-# Write the PEM to a temporary file
+# Write the SSL CA certificate to a temporary file
 ssl_ca_path = "/tmp/ca.pem"
 with open(ssl_ca_path, "w") as f:
     f.write(SSL_CA_CONTENT)
 
 # -----------------------------
-# 2️⃣ Create engine securely with SSL
+# 2️⃣ Create SQLAlchemy engine securely with SSL
 # -----------------------------
 engine = create_engine(
     f"mysql+mysqlconnector://{USER}:{PASSWORD}@{HOST}:{PORT}/{DB}",
@@ -34,7 +34,7 @@ engine = create_engine(
 )
 
 # -----------------------------
-# 3️⃣ Reflect the existing jobs table
+# 3️⃣ Reflect the existing tables
 # -----------------------------
 metadata = MetaData()
 metadata.reflect(bind=engine)
@@ -42,21 +42,45 @@ metadata.reflect(bind=engine)
 # Debug: print available tables
 print("Available tables:", list(metadata.tables.keys()))
 
+# Access the jobs table
 jobs_table = metadata.tables.get("jobs")
 if jobs_table is None:
     raise ValueError("Table 'jobs' does not exist in the database!")
 
 # -----------------------------
-# 4️⃣ Query all jobs
+# 4️⃣ Define statements for queries
 # -----------------------------
-stmt = select(jobs_table)
+stmt_all_jobs = select(jobs_table)
 
+# -----------------------------
+# 5️⃣ Functions to load jobs
+# -----------------------------
 def load_jobs_from_db():
+    """Return all jobs as a list of dictionaries"""
     with engine.connect() as conn:
-        results = conn.execute(stmt).mappings().all()  # returns list of dicts
+        results = conn.execute(stmt_all_jobs).mappings().all()
     return results
 
+def load_job_from_db(job_id):
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT * FROM jobs WHERE id = :val"),
+            {"val": job_id}
+        ).mappings().fetchone()  # <--- use .mappings() here
+        if result is None:
+            return None
+        return dict(result)  # now this works
+
+# -----------------------------
+# 6️⃣ Optional: test when run standalone
+# -----------------------------
 if __name__ == "__main__":
-    results = load_jobs_from_db()
-    for row in results:
-        print(row)
+    all_jobs = load_jobs_from_db()
+    print(f"Total jobs found: {len(all_jobs)}")
+    for job in all_jobs:
+        print(job)
+
+    # Example: load job with id=1
+    single_job = load_job_from_db(1)
+    print("\nJob with ID 1:")
+    print(single_job)

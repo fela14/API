@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ job.title }} - Hale Careers</title>
+    {% include 'bootstrap.html' %}
+    <style>
+        .job-content {
+            margin-left: 40px;   /* <-- pushes content left or right */
+            margin-right: 20px;  /* optional */
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'nav.html' %}
+
+    {% include 'banner.html' %}
+
+    <div class="job-content mt-2 mb-4">
+
+        <h1 class="text-center mt-2 mb-2">Hale Careers</h1>
+
+        <h3>{{ job.title }}</h3>
+
+        <p class="lead">{{ job.location }}</p>
+
+        <h4>Responsibilities</h4>
+        {% if job.responsibilities %}
+            <ul>
+            {% for line in job.responsibilities.split('.') %}
+                {% if line.strip() %}  <!-- skip empty strings -->
+                    <li>{{ line.strip() }}.</li>
+                {% endif %}
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>Not specified</p>
+        {% endif %}
+
+        <h4>Requirements</h4>
+        {% if job.requirements %}
+            <ol>
+            {% for line in job.requirements.split('.') %}
+                {% if line.strip() %}
+                    <li>{{ line.strip() }}.</li>
+                {% endif %}
+            {% endfor %}
+            </ol>
+        {% else %}
+            <p>Not specified</p>
+        {% endif %}
+
+        <h4>Salary</h4>
+        {% if job.salary %}
+            <p>${{ job.salary }} {% if job.currency %}{{ job.currency }}{% endif %}</p>
+        {% else %}
+            <p>Not disclosed</p>
+        {% endif %}
+
+    </div>
+    {% include 'footer.html' %}
+</body>
+</html>
