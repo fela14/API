@@ -34,8 +34,12 @@ def home():
 # -----------------------------
 @app.route("/api/jobs")
 def api_jobs():
-    jobs = load_jobs_from_db()
-    return jsonify(jobs)
+    try:
+        jobs = load_jobs_from_db()
+        return jsonify(jobs)
+    except Exception as e:
+        return jsonify({"error": "Failed to load jobs", "details": str(e)}), 500
+
 
 # -----------------------------
 # API: single job

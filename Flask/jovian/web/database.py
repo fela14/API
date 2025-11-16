@@ -48,8 +48,11 @@ if jobs_table is None:
 stmt_all_jobs = select(jobs_table)
 
 def load_jobs_from_db():
+    """Return all jobs as a list of dictionaries"""
     with engine.connect() as conn:
-        return conn.execute(stmt_all_jobs).mappings().all()
+        results = conn.execute(stmt_all_jobs).mappings().all()  # RowMapping objects
+        # Convert to list of dicts
+        return [dict(row) for row in results]
 
 # -----------------------------
 # Load one job
