@@ -6,6 +6,18 @@ from database import (
     load_all_applications,
     load_applications_for_job
 )
+import requests
+from mailjet_rest import Client
+import os
+
+# hCaptcha secret key
+HCAPTCHA_SECRET = os.getenv("HCAPTCHA_SECRET")
+
+# Mailjet credentials
+MJ_API_KEY = os.getenv("MJ_API_KEY")
+MJ_API_SECRET = os.getenv("MJ_API_SECRET")
+MJ_SENDER_EMAIL = os.getenv("MJ_SENDER_EMAIL")  # e.g., "noreply@yourdomain.com"
+MJ_SENDER_NAME = "Hale Careers"
 
 app = Flask(__name__)
 
@@ -55,10 +67,48 @@ def apply_to_job(id):
     data = request.form.to_dict()
     job = load_job_from_db(id)
 
-    add_application_to_db(id, data)
+    # -----------------------------
+    # 1️⃣ Verify hCaptcha
+    # -----------------------------
+    hcaptcha_response = data.get("h-captcha-response")
+    if not hcaptcha_response:
+        return "hCaptcha verification failed. Please try again.", 400
 
+    verify_url = "https://hcaptcha.com/siteverify"
+    payload = {
+        "secret": HCAPTCHA_SECRET,
+        "response": hcaptcha_response
+    }
+    resp = requests.post(verify_url, data=payload).json()
+    if not resp.get("success"):
+        return "hCaptcha verification failed. Please try again.", 400
+
+    # -----------------------------
+    # 2️⃣ Save application to DB
+    # -----------------------------
+    add_application_to_db(id, data)
     data['job_id'] = id
 
+    # -----------------------------
+    # 3️⃣ Send confirmation email via Mailjet
+    # -----------------------------
+    mailjet = Client(auth=(MJ_API_KEY, MJ_API_SECRET), version='v3.1')
+    message = {
+        'Messages': [
+            {
+                "From": {"Email": MJ_SENDER_EMAIL, "Name": MJ_SENDER_NAME},
+                "To": [{"Email": data.get("email"), "Name": data.get("full_name")}],
+                "Subject": f"Application Received for {job['title']}",
+                "TextPart": f"Hi {data.get('full_name')},\n\nThank you for applying to {job['title']}.\nWe will review your application and get back to you soon.",
+                "HTMLPart": f"<h3>Hi {data.get('full_name')},</h3><p>Thank you for applying to <b>{job['title']}</b>.</p><p>We will review your application and get back to you soon.</p>"
+            }
+        ]
+    }
+    mailjet.send.create(data=message)
+
+    # -----------------------------
+    # 4️⃣ Render submitted page
+    # -----------------------------
     return render_template("submitted.html", application=data, job=job)
 
 # -----------------------------

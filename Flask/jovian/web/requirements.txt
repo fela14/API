@@ -2,3 +2,6 @@ Flask
 gunicorn
 SQLAlchemy
 mysql-connector-python
+mailjet_rest
+requests
+python-dotenv  # if you want to load environment variables from a .env file
