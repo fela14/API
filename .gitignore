@@ -2,4 +2,4 @@
 Flask/rest/ful/scratch/twilio.env
 Flask/jovian/web/pass.txt
 Flask/jovian/web/aiven/ca.pem
-Flask/microservices/system_design/python/src/auth/manifests/secret.yaml
+Flask/microservices/system_design/python/src/auth/manifests/auth-secret.yaml
