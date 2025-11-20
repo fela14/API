@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  labels:
+    app: auth
+spec:
+  selector:
+    app: auth
+  ports:
+    - protocol: TCP
+      port: 5000        # Port exposed to other pods / cluster
+      targetPort: 5000  # Port the container listens on
+  type: ClusterIP       # Default; accessible only inside the cluster
