@@ -1,25 +1,30 @@
+# Base image
 FROM python:3.10-slim-bullseye
 
-# Install system dependencies for MySQL client
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       build-essential \
-       default-libmysqlclient-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir --upgrade pip
+# Install system dependencies needed for mysqlclient and bcrypt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        libmariadb-dev-compat \
+        libmariadb-dev \
+        pkg-config && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy and install dependencies first for caching
-COPY ./requirements.txt /app/
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Copy requirements first (for caching)
+COPY requirements.txt /app/
+
+# Upgrade pip and install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the app
 COPY . /app
 
-# Expose Flask port
+# Expose port
 EXPOSE 5000
 
-# Start the Flask server
+# Run the Flask server
 CMD ["python3", "server.py"]
