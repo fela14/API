@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rabbitmq-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: rabbitmq-manager.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rabbitmq
+                port:
+                  number: 15672
+
+
+# edit /etc/hosts with 127.0.0.1      rabbitmq-manager.com
