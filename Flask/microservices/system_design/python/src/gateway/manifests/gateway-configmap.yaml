@@ -4,4 +4,6 @@ metadata:
   name: gateway-configmap
 data:
   AUTH_SVC_ADDRESS: "auth:5000"
+  RABBIT_QUEUE: "video"
+  RABBIT_HOST: "rabbitmq"
   # Add any other non-sensitive configuration here

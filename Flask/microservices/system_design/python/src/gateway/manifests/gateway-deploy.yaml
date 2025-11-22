@@ -23,9 +23,28 @@ spec:
           image: fela14/gateway:latest
           ports:
             - containerPort: 8080
-          envFrom:
-            - configMapRef:
-                name: gateway-configmap
+          env:
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASS
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: RABBITMQ_PASS
+        - name: RABBIT_QUEUE
+          valueFrom:
+            configMapKeyRef:
+              name: gateway-configmap
+              key: RABBIT_QUEUE
+        - name: RABBIT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: gateway-configmap
+              key: RABBIT_HOST
+
             # - secretRef: name: gateway-secret
 
 

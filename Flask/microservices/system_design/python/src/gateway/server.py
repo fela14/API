@@ -8,21 +8,28 @@ from auth import validate
 from auth_svc import access
 from storage import util
 
+# ----------------------------
+# Flask & MongoDB Setup
+# ----------------------------
 server = Flask(__name__)
 server.config["MONGO_URI"] = "mongodb://host.minikube.internal:27017/videos"
-
 mongo = PyMongo(server)
 fs = gridfs.GridFS(mongo.db)
 
 # ----------------------------
-# RabbitMQ connection
+# RabbitMQ Connection
 # ----------------------------
-credentials = pika.PlainCredentials("guest", "guest")  # default user/pass
+RABBIT_USER = os.environ.get("RABBITMQ_USER", "admin")
+RABBIT_PASS = os.environ.get("RABBITMQ_PASS", "admin")
+RABBIT_HOST = os.environ.get("RABBIT_HOST", "rabbitmq")
+RABBIT_QUEUE = os.environ.get("RABBIT_QUEUE", "video")
+
+credentials = pika.PlainCredentials(RABBIT_USER, RABBIT_PASS)
 connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host="rabbitmq", credentials=credentials)
+    pika.ConnectionParameters(host=RABBIT_HOST, credentials=credentials)
 )
 channel = connection.channel()
-channel.queue_declare(queue="video", durable=True)
+channel.queue_declare(queue=RABBIT_QUEUE, durable=True)
 
 # ----------------------------
 # LOGIN ENDPOINT
@@ -32,8 +39,7 @@ def login():
     token_data, err = access.login(request)
     if not err:
         return token_data, 200
-    else:
-        return err
+    return err
 
 # ----------------------------
 # UPLOAD ENDPOINT
@@ -71,4 +77,3 @@ def download():
 # ----------------------------
 if __name__ == "__main__":
     server.run(host="0.0.0.0", port=5000)
-
