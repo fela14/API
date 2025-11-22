@@ -3,7 +3,7 @@ import gridfs
 import pika
 import json
 from flask import Flask, request
-from flask_pymongo import PyMongo  # fixed import: flask_pymongo
+from flask_pymongo import PyMongo
 from auth import validate
 from auth_svc import access
 from storage import util
@@ -14,30 +14,34 @@ server.config["MONGO_URI"] = "mongodb://host.minikube.internal:27017/videos"
 mongo = PyMongo(server)
 fs = gridfs.GridFS(mongo.db)
 
+# ----------------------------
 # RabbitMQ connection
-connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
+# ----------------------------
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(host="rabbitmq")  # no credentials
+)
 channel = connection.channel()
-channel.queue_declare(queue="video", durable=True)  # ensure queue exists
+channel.queue_declare(queue="video", durable=True)
 
 # ----------------------------
 # LOGIN ENDPOINT
 # ----------------------------
-@server.route("/login", methods=["POST"])  # fixed typo "POSt"
+@server.route("/login", methods=["POST"])
 def login():
-    token_data, err = access.login(request)  # fixed variable names
+    token_data, err = access.login(request)
     if not err:
-        return token_data, 200  # return token with status code
+        return token_data, 200
     else:
-        return err  # should already be a tuple like (msg, code)
+        return err
 
 # ----------------------------
 # UPLOAD ENDPOINT
 # ----------------------------
-@server.route("/upload", methods=["POST"])  # fixed typo "POSt"
+@server.route("/upload", methods=["POST"])
 def upload():
     access_data, err = validate.token(request)
     if err:
-        return err  # unauthorized or missing token
+        return err
 
     access_data = json.loads(access_data)
 
@@ -50,7 +54,7 @@ def upload():
     for _, f in request.files.items():
         err = util.upload(f, fs, channel, access_data)
         if err:
-            return err  # upload failed
+            return err
 
     return "success!", 200
 
@@ -64,5 +68,5 @@ def download():
 # ----------------------------
 # MAIN
 # ----------------------------
-if __name__ == "__main__":  # fixed typo
+if __name__ == "__main__":
     server.run(host="0.0.0.0", port=5000)
