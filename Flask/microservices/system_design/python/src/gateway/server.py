@@ -17,8 +17,9 @@ fs = gridfs.GridFS(mongo.db)
 # ----------------------------
 # RabbitMQ connection
 # ----------------------------
+credentials = pika.PlainCredentials("guest", "guest")  # default user/pass
 connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host="rabbitmq")  # no credentials
+    pika.ConnectionParameters(host="rabbitmq", credentials=credentials)
 )
 channel = connection.channel()
 channel.queue_declare(queue="video", durable=True)
@@ -70,3 +71,4 @@ def download():
 # ----------------------------
 if __name__ == "__main__":
     server.run(host="0.0.0.0", port=5000)
+
