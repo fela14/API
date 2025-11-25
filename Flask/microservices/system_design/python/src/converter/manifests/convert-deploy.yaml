@@ -1,0 +1,55 @@
+# -----------------------------
+# convert-deploy.yaml
+# -----------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: converter
+  labels:
+    app: converter
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: converter
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 8
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: converter
+    spec:
+      containers:
+        - name: converter
+          image: fela14/converter:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: converter-secret
+                  key: RABBITMQ_USER
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: converter-secret
+                  key: RABBITMQ_PASS
+            - name: VIDEO_QUEUE
+              valueFrom:
+                configMapKeyRef:
+                  name: converter-configmap
+                  key: VIDEO_QUEUE
+            - name: MP3_QUEUE
+              valueFrom:
+                configMapKeyRef:
+                  name: converter-configmap
+                  key: MP3_QUEUE
+            - name: RABBIT_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: converter-configmap
+                  key: RABBIT_HOST

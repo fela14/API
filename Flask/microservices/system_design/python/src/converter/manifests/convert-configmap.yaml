@@ -1,0 +1,12 @@
+# -----------------------------
+# convert-configmap.yaml
+# -----------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: converter-configmap
+data:
+  VIDEO_QUEUE: "video"
+  MP3_QUEUE: "mp3"
+  RABBIT_HOST: "rabbitmq"
+  # Add any other non-sensitive configuration here
