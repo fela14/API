@@ -25,9 +25,18 @@ SECRET_KEY = 'django-insecure-zpd_9f^ls+p49gxl6gs8xkbrt9l&48-q9s3_3$##6ot13dp#sq
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [".csb.app"]
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '.github.dev',
+    '.app.github.dev',
+    'vigilant-acorn-x5pp77x67x7qcp7j6-8000.app.github.dev',
+]
 
-
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 
 # Application definition
 
