@@ -1,7 +1,31 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Item
 from .forms import NewItemForm, EditItemForm
+from .models import Category, Item
+
+def items(request):        # browse
+    query = request.GET.get('query', '')
+    category_id = request.GET.get('category', '')
+    categories = Category.objects.all()
+    items = Item.objects.filter(is_sold=False)
+
+    if query:
+        items = items.filter(Q(name__icontains=query) | Q(description__icontains=query))
+
+    # FIX: apply category filter only if category_id is not empty
+    if category_id:
+        items = items.filter(category_id=int(category_id))
+    else:
+        category_id = None   # so your template doesn’t break
+
+    return render(request, 'item/items.html', {
+        'items': items,
+        'query': query,
+        'categories': categories,
+        'category_id': category_id
+    })
+
 
 def detail(request, pk):
     item = get_object_or_404(Item, pk=pk)
